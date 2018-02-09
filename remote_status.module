@@ -49,11 +49,11 @@ function remote_status_request_data()
         break;
     }
 
-    if (empty($well->collections) && variable_get('site_readonly', FALSE) == 0) {
+    if (empty($broend) && variable_get('site_readonly', FALSE) == 0) {
 
         remote_system_well_search_down();
 
-    } elseif (empty($request->storage) && variable_get('site_readonly', FALSE) == 0) {
+    } elseif (empty($branches[$branch->branchId]) && variable_get('site_readonly', FALSE) == 0) {
 
         remote_status_library_system_down();
 
