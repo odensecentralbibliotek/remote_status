@@ -1,0 +1,119 @@
+<?php
+
+/**
+ * Implements hook_cron().
+ */
+function remote_status_cron()
+{
+    remote_status_request_data();
+}
+
+
+function remote_status_request_data()
+{
+
+    try {
+        // Test library system
+        $request = fbs_service()->Placement->getBranches(fbs_service()->agencyId);
+
+    }
+    catch (Exception $e) {
+
+        remote_status_library_system_down();
+
+    }
+
+    try {
+        // Test well search
+        $searchRequest = ting_get_request_factory()->getSearchRequest();
+        $searchRequest->setQuery('danmark');
+        $searchRequest->setNumResults(10);
+        $well = ting_get_client()->execute($searchRequest);
+
+    }
+    catch (TingClientException $e) {
+
+        remote_system_well_search_down();
+
+    }
+    catch (Exception $e) {
+
+        remote_system_well_search_down();
+
+    }
+
+    $broend = $well->collections[1]->objects[0]->id;
+
+    foreach ($request as $branch) {
+        $branches[$branch->branchId] = $branch->title;
+        break;
+    }
+
+    if (empty($well->collections) && variable_get('site_readonly', FALSE) == 0) {
+
+        remote_system_well_search_down();
+
+    } elseif (empty($request->storage) && variable_get('site_readonly', FALSE) == 0) {
+
+        remote_status_library_system_down();
+
+    } elseif (!empty($broend) && !empty($branches[$branch->branchId]) && variable_get('site_readonly', FALSE) == 1) {
+
+        remote_status_system_up();
+
+    }
+}
+function remote_status_library_system_down()
+{
+    variable_set('site_readonly_message', 'Begrænset adgang. Der er i øjeblikket problemer med forbindelsen til vores leverandør af biblioteksystem.');
+    variable_set('site_readonly_message_form_not_saved', 'Data er ikke gemt. Der er i øjeblikket problemer med forbindelsen til vores leverandør af biblioteksystem og er ikke muligt at ændre indholdet. Venligst prøv igen senere.');
+
+    variable_set('site_readonly_forms_allowed', 'ding_facetbrowser_form
+webform_client_form_*');
+
+    variable_set('site_readonly_forms_viewonly', 'user_bookmarks
+flag_confirm
+ding_facetbrowser_form
+ding_gatewayf_registration_acceptance_form
+user_login_form
+user_login');
+
+    variable_set('site_readonly', 1);
+}
+
+function remote_status_system_up()
+{
+
+    variable_set('site_readonly_forms_allowed', 'ding_facetbrowser_form
+webform_client_form_*
+ding_loan_loans_form
+ding_reservation_reservations_notready_form
+user_profile_form');
+
+    variable_set('site_readonly_forms_viewonly', 'user_bookmarks
+flag_confirm
+ding_facetbrowser_form
+webform_client_form_*
+ding_debt_debts_form
+ding_loan_loans_form
+ding_reservation_reservations_notready_form
+user_profile_form');
+
+    variable_set('site_readonly', 0);
+}
+
+function remote_system_well_search_down()
+{
+
+    variable_set('site_readonly_message', 'Begrænset adgang. Der er i øjeblikket problemer med søgning fra vores leverandør af biblioteksystem.');
+    variable_set('site_readonly_message_form_not_saved', 'Der blev ikke søgt. Der er i øjeblikket problemer med søgning fra vores leverandør af biblioteksystem. Venligst prøv igen senere.');
+
+    variable_set('site_readonly_forms_allowed', 'webform_client_form_*
+ding_debt_debts_form
+user_profile_form');
+
+    variable_set('site_readonly_forms_viewonly', 'webform_client_form_*
+search_form');
+
+    variable_set('site_readonly', 1);
+}

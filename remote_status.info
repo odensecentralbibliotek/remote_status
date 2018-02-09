@@ -1,0 +1,5 @@
+name = remote_status
+description = Shows statuses from external services.
+core = 7.x
+configure = admin/config/services/remote_status
+project = remote_status
